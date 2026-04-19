@@ -10,14 +10,18 @@ spring:
         locator:
           enabled: true
       routes:
-        - id: identity-service
-          uri: lb://identity-service
+        - id: auth-service
+          uri: lb://auth-service
           predicates:
             - Path=/api/auth/**
-        - id: video-service
-          uri: lb://video-service
+        - id: post-service
+          uri: lb://post-service
           predicates:
-            - Path=/api/videos/**
+            - Path=/api/posts/**
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
 
 eureka:
   client:
@@ -26,8 +30,8 @@ eureka:
 
 grpc:
   client:
-    identity-service:
-      address: 'discovery:///identity-service'
+    auth-service:
+      address: 'discovery:///auth-service'
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
