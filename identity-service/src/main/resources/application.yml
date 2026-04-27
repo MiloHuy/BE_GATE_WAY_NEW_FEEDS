@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: identity-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/identity_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: leovmika68
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
 eureka:
   client:
@@ -13,3 +22,21 @@ eureka:
 grpc:
   server:
     port: 9090
+
+jwt:
+  secret: 2a0e929f81eb06a0b9eba5a39e24e91966608eee54bcb9ab
+  expiration: 86400000 # 1 day
+  refresh-expiration: 604800000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:mysql://mysql:3306/identity_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
