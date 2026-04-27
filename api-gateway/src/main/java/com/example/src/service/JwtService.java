@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.security.Key;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Date;
@@ -42,16 +43,23 @@ public class JwtService {
         return extractAllClaims(token).getSubject();
     }
 
-    public boolean isTokenValid(String token) {
+    public Mono<Boolean> isTokenValid(String token) {
+        Claims claims;
         try {
-            Claims claims = extractAllClaims(token);
-            return !claims.getExpiration().before(new Date());
+            claims = extractAllClaims(token);
         } catch (Exception e) {
-            return false;
+            return Mono.just(false);
         }
-    }
 
-    // --- Redis Logic ---
+        if (claims.getExpiration().before(new Date())) {
+            return Mono.just(false);
+        }
+
+        return isBlacklisted(token)
+                .flatMap(isBlacklisted -> isBlacklisted
+                        ? Mono.just(false)
+                        : isWhitelisted(token));
+    }
 
     private long getRemainingTimeInMillis(String token) {
         try {
@@ -64,19 +72,30 @@ public class JwtService {
         }
     }
 
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes());
+            return Base64.getEncoder().encodeToString(hash);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public Mono<Boolean> isBlacklisted(String token) {
-        return redisTemplate.hasKey("blacklist:" + token)
+        return redisTemplate.hasKey("blacklist:" + hashToken(token))
                 .defaultIfEmpty(false);
     }
 
     public Mono<Boolean> isWhitelisted(String token) {
-        return redisTemplate.hasKey("whitelist:" + token)
+        return redisTemplate.hasKey("whitelist:" + hashToken(token))
                 .defaultIfEmpty(false);
     }
 
     public Mono<Boolean> addToWhitelist(String token) {
         long remainingTime = getRemainingTimeInMillis(token);
-        if (remainingTime <= 0) return Mono.just(false);
+        if (remainingTime <= 0)
+            return Mono.just(false);
 
         return redisTemplate.opsForValue()
                 .set("whitelist:" + token, "true", Duration.ofMillis(remainingTime));
@@ -84,12 +103,18 @@ public class JwtService {
 
     public Mono<Boolean> addToBlacklist(String token) {
         long remainingTime = getRemainingTimeInMillis(token);
-        if (remainingTime <= 0) return Mono.just(false);
+        if (remainingTime <= 0)
+            return Mono.just(false);
 
-        // Add to blacklist and optionally delete from whitelist in sequence
+        String key = "blacklist: " + hashToken(token);
         return redisTemplate.opsForValue()
-                .set("blacklist:" + token, "true", Duration.ofMillis(remainingTime))
-                .then(redisTemplate.delete("whitelist:" + token))
-                .thenReturn(true);
+                .set(key, "true", Duration.ofMillis(remainingTime))
+                .flatMap(success -> {
+                    if (success) {
+                        return redisTemplate.delete("whitelist: " + hashToken(token))
+                                .thenReturn(true);
+                    }
+                    return Mono.just(false);
+                });
     }
 }

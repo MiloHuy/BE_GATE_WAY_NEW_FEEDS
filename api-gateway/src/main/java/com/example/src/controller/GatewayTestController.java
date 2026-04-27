@@ -1,13 +1,13 @@
 package com.example.src.controller;
 
-import com.example.proto.UserRequest;
-import com.example.proto.UserResponse;
-import com.example.proto.UserServiceGrpc;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.example.proto.UserRequest;
+import com.example.proto.UserResponse;
+import com.example.proto.UserServiceGrpc;
 
 import java.util.Map;
 
@@ -30,7 +30,6 @@ public class GatewayTestController {
                 "userId", response.getUserId(),
                 "username", response.getUsername(),
                 "email", response.getEmail(),
-                "source", "gRPC from Identity Service"
-        );
+                "source", "gRPC from Identity Service");
     }
 }

@@ -21,14 +21,12 @@ public class JwtAuthFilter implements WebFilter {
 
     private final JwtService jwtService;
 
-    // Routes that do NOT require a JWT token
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
-            "/api/auth/logout", // Allow logout to pass through filter to controller
-            "/api/gateway" // test endpoint
-    );
+            "/api/auth/logout",
+            "/api/gateway");
 
     public JwtAuthFilter(JwtService jwtService) {
         this.jwtService = jwtService;
@@ -62,22 +60,21 @@ public class JwtAuthFilter implements WebFilter {
                     if (isBlacklisted) {
                         return unauthorized(exchange);
                     }
-                    
+
                     return jwtService.isWhitelisted(token)
                             .flatMap(isWhitelisted -> {
                                 if (isWhitelisted) {
-                                    // Token is good, skip signature validation check if you want,
-                                    // but we still need claims. We'll extract claims directly.
                                     return proceedWithClaims(token, exchange, chain);
                                 } else {
-                                    // Not in whitelist, verify JWT
-                                    if (!jwtService.isTokenValid(token)) {
-                                        return unauthorized(exchange);
-                                    }
-                                    
-                                    // Valid token -> add to whitelist -> proceed
-                                    return jwtService.addToWhitelist(token)
-                                            .then(proceedWithClaims(token, exchange, chain));
+                                    return jwtService.isTokenValid(token)
+                                            .flatMap(isValid -> {
+                                                if (!isValid) {
+                                                    return unauthorized(exchange);
+                                                }
+
+                                                return jwtService.addToWhitelist(token)
+                                                        .then(proceedWithClaims(token, exchange, chain));
+                                            });
                                 }
                             });
                 });
@@ -88,18 +85,16 @@ public class JwtAuthFilter implements WebFilter {
             Claims claims = jwtService.extractAllClaims(token);
             String username = claims.getSubject();
 
-            // Optionally extract roles from claims
             List<String> roles = claims.get("roles", List.class);
-            List<SimpleGrantedAuthority> authorities = roles == null ? List.of() :
-                    roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+            List<SimpleGrantedAuthority> authorities = roles == null ? List.of()
+                    : roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(username, null, authorities);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username, null,
+                    authorities);
 
-            // Forward user info to downstream services via headers
             ServerWebExchange mutatedExchange = exchange.mutate()
                     .request(r -> r.header("X-User-Id", username)
-                                   .header("X-User-Roles", roles == null ? "" : String.join(",", roles)))
+                            .header("X-User-Roles", roles == null ? "" : String.join(",", roles)))
                     .build();
 
             return chain.filter(mutatedExchange)

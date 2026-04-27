@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: localhost
+      port: 6379
   cloud:
     gateway:
       discovery:
@@ -35,14 +39,12 @@ grpc:
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
+    identity-service:
+      address: 'discovery:///identity-service'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
 
-# JWT secret — must match the secret used in identity-service
-# Generate a Base64-encoded 256-bit key: openssl rand -base64 32
 jwt:
   secret: 2a0e929f81eb06a0b9eba5a39e24e91966608eee54bcb9ab
 
-# Redis (used for token blacklist / rate limiting if needed)
-  data:
-    redis:
-      host: localhost
-      port: 6379
