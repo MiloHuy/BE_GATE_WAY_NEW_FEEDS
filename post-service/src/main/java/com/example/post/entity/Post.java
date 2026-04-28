@@ -29,6 +29,9 @@ public class Post {
     @Column(name = "reply_count")
     private int replyCount = 0;
     
+    @Version
+    private Long version;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: post-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
   datasource:
     url: jdbc:mysql://localhost:3307/post_db?createDatabaseIfNotExist=true
     username: root
