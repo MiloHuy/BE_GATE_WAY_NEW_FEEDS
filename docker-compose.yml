@@ -67,6 +67,23 @@ services:
       - identity-service
       - redis
 
+  post-service:
+    build:
+      context: .
+      target: post-service
+    container_name: post-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./post-uploads:/app/uploads
+    networks:
+      - backend
+    depends_on:
+      - discovery-server
+      - mysql
+
 networks:
   backend:
     driver: bridge

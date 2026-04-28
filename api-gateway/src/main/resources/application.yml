@@ -21,7 +21,7 @@ spring:
         - id: post-service
           uri: lb://post-service
           predicates:
-            - Path=/api/posts/**
+            - Path=/api/posts/**, /api/media/**
         - id: user-service
           uri: lb://user-service
           predicates:

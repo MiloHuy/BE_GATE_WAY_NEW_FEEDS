@@ -27,6 +27,7 @@
         <module>discovery-server</module>
         <module>proto-common</module>
         <module>identity-service</module>
+        <module>post-service</module>
     </modules>
 
     <dependencyManagement>
