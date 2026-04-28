@@ -9,8 +9,6 @@ import com.example.identity.security.JwtProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class AuthService {
 
@@ -65,7 +63,7 @@ public class AuthService {
         }
 
         String username = jwtProvider.extractUsername(refreshToken);
-        
+
         // Ensure user still exists
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));

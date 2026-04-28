@@ -17,10 +17,9 @@ public class CorsConfig {
 
         // Allow your frontend origins — update these as needed
         config.setAllowedOrigins(List.of(
-                "http://localhost:3000",   // React dev server
-                "http://localhost:5173",   // Vite dev server
-                "http://localhost:4200"    // Angular dev server
-        ));
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:4200"));
 
         // Allow all common HTTP methods
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

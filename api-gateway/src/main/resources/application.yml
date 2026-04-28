@@ -15,7 +15,7 @@ spring:
           enabled: true
       routes:
         - id: auth-service
-          uri: lb://identity-service
+          uri: lb://IDENTITY-SERVICE
           predicates:
             - Path=/api/auth/**
         - id: post-service
@@ -48,3 +48,19 @@ grpc:
 jwt:
   secret: 2a0e929f81eb06a0b9eba5a39e24e91966608eee54bcb9ab
 
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
