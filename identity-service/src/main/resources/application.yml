@@ -4,13 +4,8 @@ server:
 spring:
   application:
     name: identity-service
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics,info
   datasource:
-    url: jdbc:mysql://localhost:3306/identity_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3307/identity_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
     password: leovmika68
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -18,6 +13,12 @@ management:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
 
 eureka:
   client:

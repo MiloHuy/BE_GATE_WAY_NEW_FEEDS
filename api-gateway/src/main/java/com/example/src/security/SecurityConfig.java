@@ -32,7 +32,10 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/refresh",
-                                "/api/gateway/**" // test endpoint
+                                "/api/auth/validate",
+                                "/api/media/**",
+                                "/api/posts/**",
+                                "/api/gateway/**"
                         ).permitAll()
                         // All other requests must pass through JwtAuthFilter
                         .anyExchange().authenticated())

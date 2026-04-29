@@ -27,6 +27,8 @@ public class JwtAuthFilter implements WebFilter {
             "/api/auth/register",
             "/api/auth/refresh",
             "/api/auth/logout",
+            "/api/media",
+            "/api/posts",
             "/api/gateway");
 
     public JwtAuthFilter(JwtService jwtService) {

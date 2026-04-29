@@ -13,15 +13,19 @@ spring:
       discovery:
         locator:
           enabled: true
+      default-filters:
+        - TokenRelay 
       routes:
-        - id: auth-service
-          uri: lb://IDENTITY-SERVICE
+        - id: identity-service
+          uri: lb://identity-service
           predicates:
             - Path=/api/auth/**
+
         - id: post-service
           uri: lb://post-service
           predicates:
             - Path=/api/posts/**, /api/media/**
+
         - id: user-service
           uri: lb://user-service
           predicates:
@@ -34,33 +38,9 @@ eureka:
 
 grpc:
   client:
-    auth-service:
-      address: 'discovery:///auth-service'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
     identity-service:
       address: 'discovery:///identity-service'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
       negotiationType: plaintext
 
 jwt:
-  secret: 2a0e929f81eb06a0b9eba5a39e24e91966608eee54bcb9ab
-
----
-spring:
-  config:
-    activate:
-      on-profile: docker
-  data:
-    redis:
-      host: redis
-      port: 6379
-
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    service-url:
-      defaultZone: http://discovery-server:8761/eureka/
+  secret: ${JWT_SECRET:2a0e929f81eb06a0b9eba5a39e24e91966608eee54bcb9ab}

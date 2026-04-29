@@ -2,8 +2,9 @@ package com.example.post.repository;
 
 import com.example.post.entity.NewsFeed;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface NewsFeedRepository extends JpaRepository<NewsFeed, String> {
-    List<NewsFeed> findByOwnerUserIdOrderByCreatedAtDesc(String ownerUserId);
+    Page<NewsFeed> findByOwnerUserIdOrderByCreatedAtDesc(String ownerUserId, Pageable pageable);
 }

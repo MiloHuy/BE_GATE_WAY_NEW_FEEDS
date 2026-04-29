@@ -21,6 +21,10 @@ public class ApiResponse<T> {
         return new ApiResponse<>(1000, "Success", "success", data);
     }
 
+    public static <T> ApiResponse<T> error(int code, String message) {
+        return new ApiResponse<>(code, message, "error", null);
+    }
+
     public int getCode() { return code; }
     public void setCode(int code) { this.code = code; }
     public String getMessage() { return message; }

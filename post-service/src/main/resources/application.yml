@@ -4,20 +4,33 @@ server:
 spring:
   application:
     name: post-service
+  datasource:
+    url: jdbc:mysql://localhost:3307/post_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: leovmika68
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    show-sql: true
+  minio:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: posts
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
+
 management:
   endpoints:
     web:
       exposure:
         include: health,metrics,info
-  datasource:
-    url: jdbc:mysql://localhost:3307/post_db?createDatabaseIfNotExist=true
-    username: root
-    password: password
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
 
 grpc:
   client:
@@ -39,6 +52,15 @@ spring:
       on-profile: docker
   datasource:
     url: jdbc:mysql://mysql:3306/post_db?createDatabaseIfNotExist=true
+  minio:
+    endpoint: http://minio:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: posts
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
 
 eureka:
   instance:

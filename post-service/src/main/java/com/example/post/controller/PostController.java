@@ -6,6 +6,9 @@ import com.example.post.entity.Post;
 import com.example.post.service.PostService;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -19,13 +22,23 @@ public class PostController {
     }
 
     @GetMapping
-    public ApiResponse<List<PostResponse>> getAllPosts() {
-        return ApiResponse.success(postService.getAllPosts());
+    public ApiResponse<Page<PostResponse>> getAllPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ApiResponse.success(postService.getAllPosts(page, size));
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<PostResponse> getPostById(@PathVariable String id) {
+        return ApiResponse.success(postService.getPostById(id));
     }
 
     @GetMapping("/feed/{userId}")
-    public ApiResponse<List<PostResponse>> getFeedByUserId(@PathVariable String userId) {
-        return ApiResponse.success(postService.getFeedForUser(userId));
+    public ApiResponse<Page<PostResponse>> getFeedByUserId(
+            @PathVariable String userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ApiResponse.success(postService.getFeedForUser(userId, page, size));
     }
 
     @PostMapping
