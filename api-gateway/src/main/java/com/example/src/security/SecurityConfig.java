@@ -1,46 +1,80 @@
 package com.example.src.security;
 
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
-import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.http.HttpMethod;
+
+import org.springframework.core.convert.converter.Converter;
+
+import org.springframework.security.oauth2.jwt.Jwt;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
+        private final String[] WHITE_LIST_URLS = {
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/refresh",
+                        "/api/auth/validate",
+                        "/api/media/**",
+                        "/api/posts/**",
+                        "/api/gateway/**"
+        };
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
-        this.jwtAuthFilter = jwtAuthFilter;
-    }
+        @Value("${JWT_SECRET}")
+        private String secretKey;
 
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        return http
-                .cors(Customizer.withDefaults())
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .pathMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/api/auth/refresh",
-                                "/api/auth/validate",
-                                "/api/media/**",
-                                "/api/posts/**",
-                                "/api/gateway/**"
-                        ).permitAll()
-                        // All other requests must pass through JwtAuthFilter
-                        .anyExchange().authenticated())
-                // Register our custom JWT filter BEFORE Spring Security's auth filter
-                .addFilterAt(jwtAuthFilter, SecurityWebFiltersOrder.AUTHENTICATION)
-                .build();
-    }
+        @Value("${JWT_ALGO}")
+        private String algorithm;
+
+        @Bean
+        ReactiveJwtDecoder jwtDecoder() {
+                SecretKey key = new SecretKeySpec(secretKey.getBytes(), algorithm);
+                return NimbusReactiveJwtDecoder.withSecretKey(key).build();
+        }
+
+        @Bean
+        SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+                return http
+                        .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                        .authorizeExchange(exchanges -> exchanges
+                                        .pathMatchers(WHITE_LIST_URLS).permitAll()
+                                        .anyExchange().authenticated())
+                        .oauth2ResourceServer(oauth2 -> oauth2
+                                        .jwt(jwt -> jwt
+                                                        .jwtDecoder(jwtDecoder())
+                                                                .jwtAuthenticationConverter(
+                                                                        jwtAuthenticationConverter())))
+                        .build();
+        }
+
+        @Bean
+        Converter<Jwt, Mono<AbstractAuthenticationToken>> jwtAuthenticationConverter() {
+                JwtGrantedAuthoritiesConverter authoritiesConverter =
+                                new JwtGrantedAuthoritiesConverter();
+
+                authoritiesConverter.setAuthoritiesClaimName("role");
+
+                JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
+
+                jwtConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+
+                return new ReactiveJwtAuthenticationConverterAdapter(jwtConverter);
+        }
+
 }
