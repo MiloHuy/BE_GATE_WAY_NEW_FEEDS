@@ -1,0 +1,15 @@
+package com.example.post.dto.API;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+@Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
+public abstract class AType {
+    private int code;
+    private String message;
+}

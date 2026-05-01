@@ -1,6 +1,6 @@
 package com.example.post.exception;
 
-import com.example.post.dto.ApiResponse;
+import com.example.post.dto.API.ErrorType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,28 +11,49 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<Object>> handleRuntimeException(RuntimeException e) {
+    @ExceptionHandler(BaseException.class)
+    public ResponseEntity<ErrorType> handleBaseException(BaseException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(1001, e.getMessage()));
+                .body(ErrorType.builder()
+                .code(e.getCode())
+                .message(e.getMessage())
+                .build());
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorType> handleRuntimeException(RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorType.builder()
+                .code(400)
+                .message(e.getMessage())
+                .build());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMaxSizeException(MaxUploadSizeExceededException e) {
+    public ResponseEntity<ErrorType> handleMaxSizeException(MaxUploadSizeExceededException e) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body(ApiResponse.error(1002, "File size exceeds the limit of 2MB"));
+                .body(ErrorType.builder()
+                .code(403)
+                .message("File size exceeds the limit of 2MB")
+                .build());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Object>> handleValidationException(MethodArgumentNotValidException e) {
+    public ResponseEntity<ErrorType> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldError().getDefaultMessage();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(1003, message));
+                .body(ErrorType.builder()
+                .code(400)
+                .message(message)
+                .build());
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception e) {
+    public ResponseEntity<ErrorType> handleGeneralException(Exception e) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(9999, "An unexpected error occurred: " + e.getMessage()));
+                .body(ErrorType.builder()
+                .code(500)
+                .message("An unexpected error occurred: " + e.getMessage())
+                .build());
     }
 }

@@ -9,8 +9,15 @@ services:
       MYSQL_DATABASE: identity_db
     ports:
       - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pleovmika68"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:alpine
@@ -19,6 +26,11 @@ services:
       - "6379:6379"
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   discovery-server:
     build:
@@ -32,8 +44,10 @@ services:
     networks:
       - backend
     depends_on:
-      - redis
-      - mysql
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   identity-service:
     build:
@@ -45,12 +59,13 @@ services:
     ports:
       - "8081:8081"
       - "9090:9090"
-
     networks:
       - backend
     depends_on:
-      - discovery-server
-      - mysql
+      discovery-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
 
   api-gateway:
     build:
@@ -66,9 +81,12 @@ services:
     networks:
       - backend
     depends_on:
-      - discovery-server
-      - identity-service
-      - redis
+      discovery-server:
+        condition: service_started
+      identity-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
 
   post-service:
     build:
@@ -79,13 +97,18 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
       - "8082:8082"
-    volumes:
-      - ./post-uploads:/app/uploads
+
+    env_file:
+      - ./post-service/.env
     networks:
       - backend
     depends_on:
-      - discovery-server
-      - mysql
+      discovery-server:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
   minio:
     image: minio/minio
@@ -99,7 +122,13 @@ services:
     command: server /data --console-address ":9001"
     networks:
       - backend
+    volumes:
+      - minio_data:/data
 
 networks:
   backend:
     driver: bridge
+
+volumes:
+  mysql_data:
+  minio_data:

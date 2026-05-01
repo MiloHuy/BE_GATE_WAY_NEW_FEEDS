@@ -6,13 +6,25 @@ spring:
     name: discovery-server
 
 eureka:
+  instance:
+    # Trong Docker, dùng tên service làm hostname để các service khác gọi tới
+    hostname: discovery-server 
   client:
     register-with-eureka: false
     fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
   server:
     wait-time-in-ms-when-sync-empty: 0
 
-logging:
-  level:
-    com.netflix.eureka: OFF
-    com.netflix.discovery: OFF
+---
+# Cấu hình riêng cho môi trường Docker
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+eureka:
+  instance:
+    # Ưu tiên sử dụng IP để các service liên lạc ổn định hơn trong container
+    prefer-ip-address: true
