@@ -22,7 +22,14 @@ public class CorsConfig {
                 "http://localhost:4200"));
 
         // Allow all common HTTP methods
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS"
+        ));
 
         // Allow all headers (Authorization, Content-Type, etc.)
         config.setAllowedHeaders(List.of("*"));
