@@ -5,6 +5,7 @@ spring:
   application:
     name: identity-service
   datasource:
+    # Port 3307 dùng khi bạn chạy ứng dụng Java trực tiếp từ IDE
     url: jdbc:mysql://localhost:3307/identity_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: root
     password: leovmika68
@@ -13,6 +14,9 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
 
 management:
   endpoints:
@@ -30,8 +34,9 @@ grpc:
     port: 9090
 
 jwt:
-  secret: 2a0e929f81eb06a0b9eba5a39e24e91966608eee54bcb9ab
-  expiration: 86400000 # 1 day
+  # Nên dùng biến môi trường để bảo mật secret key
+  secret: ${JWT_SECRET:2a0e929f81eb06a0b9eba5a39e24e91966608eee54bcb9ab}
+  expiration: 86400000 
   refresh-expiration: 604800000
 
 ---
@@ -40,11 +45,14 @@ spring:
     activate:
       on-profile: docker
   datasource:
+    # QUAN TRỌNG: Đổi 3307 thành 3306 khi chạy trong mạng Docker
     url: jdbc:mysql://mysql:3306/identity_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
 
 eureka:
   instance:
     prefer-ip-address: true
+    # Giúp định danh chính xác instance trên Eureka Dashboard
+    instance-id: ${spring.application.name}:${random.value}
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/

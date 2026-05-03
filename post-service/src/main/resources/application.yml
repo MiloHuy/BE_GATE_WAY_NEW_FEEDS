@@ -14,7 +14,7 @@ spring:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.MySQL8Dialect
     show-sql: true
   minio:
     endpoint: http://localhost:9000
@@ -23,8 +23,8 @@ spring:
     bucket: posts
   servlet:
     multipart:
-      max-file-size: 2MB
-      max-request-size: 2MB
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 management:
   endpoints:
@@ -36,9 +36,8 @@ grpc:
   client:
     identity-service:
       address: 'discovery:///identity-service'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
+      enable-keep-alive: true
+      negotiation-type: plaintext
 
 eureka:
   client:
@@ -51,20 +50,14 @@ spring:
     activate:
       on-profile: docker
   datasource:
-    url: jdbc:mysql://mysql:3306/post_db?createDatabaseIfNotExist=true
+    url: jdbc:mysql://mysql:3306/post_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
   minio:
     endpoint: http://minio:9000
-    access-key: minioadmin
-    secret-key: minioadmin
-    bucket: posts
-  servlet:
-    multipart:
-      max-file-size: 2MB
-      max-request-size: 2MB
 
 eureka:
   instance:
     prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.value}
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/

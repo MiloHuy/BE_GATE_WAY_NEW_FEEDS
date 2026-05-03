@@ -1,14 +1,19 @@
 package com.example.post.service;
 
 import com.example.post.client.UserClient;
-import com.example.post.dto.PostResponse;
-import com.example.post.entity.Friendship;
-import com.example.post.entity.NewsFeed;
-import com.example.post.entity.Post;
-import com.example.post.repository.FriendshipRepository;
-import com.example.post.repository.NewsFeedRepository;
-import com.example.post.repository.PostRepository;
+import com.example.post.database.entity.Friendship;
+import com.example.post.database.entity.NewsFeed;
+import com.example.post.database.entity.Post;
+import com.example.post.database.repository.FriendshipRepository;
+import com.example.post.database.repository.NewsFeedRepository;
+import com.example.post.database.repository.PostRepository;
+import com.example.post.dto.Post.PostResponse;
 import com.example.proto.UserResponse;
+import org.springframework.data.domain.PageImpl;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +25,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class PostService {
 
     private final PostRepository postRepository;
@@ -27,27 +34,27 @@ public class PostService {
     private final FriendshipRepository friendshipRepository;
     private final UserClient userClient;
 
-    public PostService(PostRepository postRepository,
-            NewsFeedRepository newsFeedRepository,
-            FriendshipRepository friendshipRepository,
-            UserClient userClient) {
-        this.postRepository = postRepository;
-        this.newsFeedRepository = newsFeedRepository;
-        this.friendshipRepository = friendshipRepository;
-        this.userClient = userClient;
-    }
-
     @Transactional
     public Post createPost(Post post) {
+
         Post savedPost = postRepository.save(post);
-        List<Friendship> followers = friendshipRepository.findByFollowingId(post.getUserId());
+
+        List<Friendship> followers = friendshipRepository.getFollowingList(post.getUserId());
 
         List<NewsFeed> feedItems = followers.stream()
-                .map(f -> new NewsFeed(f.getFollowerId(), savedPost.getId()))
+                .map(f -> NewsFeed.builder()
+                        .ownerUserId(f.getFollowerId())
+                        .postId(savedPost.getId())
+                        .build())
                 .collect(Collectors.toList());
 
-        feedItems.add(new NewsFeed(post.getUserId(), savedPost.getId()));
+        feedItems.add(NewsFeed.builder()
+                .ownerUserId(post.getUserId())
+                .postId(savedPost.getId())
+                .build());
+
         newsFeedRepository.saveAll(feedItems);
+
         return savedPost;
     }
 
@@ -59,32 +66,39 @@ public class PostService {
 
     public Page<PostResponse> getAllPosts(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return postRepository.findAllByOrderByCreatedAtDesc(pageable)
+        return postRepository.getLatestPosts(pageable)
                 .map(this::mapToResponse);
     }
 
     public Page<PostResponse> getFeedForUser(String userId, int page, int size) {
+
         Pageable pageable = PageRequest.of(page, size);
-        Page<NewsFeed> feedItems = newsFeedRepository.findByOwnerUserIdOrderByCreatedAtDesc(userId, pageable);
-        List<String> postIds = feedItems.stream().map(NewsFeed::getPostId).collect(Collectors.toList());
+        
+        Page<NewsFeed> feedItems = newsFeedRepository.getNewsFeed(userId, pageable);
+        
+        List<String> postIds = feedItems.stream()
+                .map(NewsFeed::getPostId)
+                .collect(Collectors.toList());
 
         List<PostResponse> posts = postRepository.findAllById(postIds).stream()
                 .map(this::mapToResponse)
-                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt())) // Ensure order
+                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
                 .collect(Collectors.toList());
 
-        return new org.springframework.data.domain.PageImpl<>(posts, pageable, feedItems.getTotalElements());
+        return new PageImpl<>(posts, pageable, feedItems.getTotalElements());
     }
 
     private PostResponse mapToResponse(Post post) {
-        PostResponse response = new PostResponse();
-        response.setId(post.getId());
-        response.setUserId(post.getUserId());
-        response.setContent(post.getContent());
-        response.setMediaUrl(post.getMediaUrl());
-        response.setLikeCount(post.getLikeCount());
-        response.setReplyCount(post.getReplyCount());
-        response.setCreatedAt(post.getCreatedAt());
+        
+        PostResponse response = PostResponse.builder()
+                .id(post.getId())
+                .userId(post.getUserId())
+                .content(post.getContent())
+                .mediaUrl(post.getMediaUrl())
+                .likeCount(post.getLikeCount())
+                .replyCount(post.getReplyCount())
+                .createdAt(post.getCreatedAt())
+                .build();
 
         UserResponse user = userClient.getUser(post.getUserId());
         response.setUsername(user.getUsername());

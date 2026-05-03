@@ -1,48 +1,46 @@
 package com.example.post.controller;
 
-import com.example.post.dto.ApiResponse;
-import com.example.post.dto.PostResponse;
-import com.example.post.entity.Post;
+import com.example.post.database.entity.Post;
+import com.example.post.dto.API.AType;
+import com.example.post.dto.API.ApiType;
 import com.example.post.service.PostService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
-import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/posts")
+@RequiredArgsConstructor
 public class PostController {
 
     private final PostService postService;
 
-    public PostController(PostService postService) {
-        this.postService = postService;
-    }
-
     @GetMapping
-    public ApiResponse<Page<PostResponse>> getAllPosts(
+    public ResponseEntity<AType> getAllPosts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ApiResponse.success(postService.getAllPosts(page, size));
+        return ResponseEntity.ok(ApiType.success(postService.getAllPosts(page, size)));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<PostResponse> getPostById(@PathVariable String id) {
-        return ApiResponse.success(postService.getPostById(id));
+    public ResponseEntity<AType> getPostById(
+            @PathVariable String id) {
+        return ResponseEntity.ok(ApiType.success(postService.getPostById(id)));
     }
 
     @GetMapping("/feed/{userId}")
-    public ApiResponse<Page<PostResponse>> getFeedByUserId(
+    public ResponseEntity<AType> getFeedByUserId(
             @PathVariable String userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ApiResponse.success(postService.getFeedForUser(userId, page, size));
+        return ResponseEntity.ok(ApiType.success(postService.getFeedForUser(userId, page, size)));
     }
 
     @PostMapping
-    public ApiResponse<Post> createPost(@RequestBody Post post) {
-        return ApiResponse.success(postService.createPost(post));
+    public ResponseEntity<AType> createPost(@RequestBody Post post) {
+        return ResponseEntity.ok(ApiType.success(postService.createPost(post)));
     }
 }
