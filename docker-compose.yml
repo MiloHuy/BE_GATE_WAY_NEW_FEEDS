@@ -1,10 +1,9 @@
-version: "3.8"
-
 services:
-  
+
   mysql:
     image: mysql:8
     container_name: mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: leovmika68
       MYSQL_DATABASE: identity_db
@@ -19,10 +18,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
 
   redis:
     image: redis:alpine
     container_name: redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
@@ -32,29 +33,33 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+      start_period: 5s
 
   discovery-server:
     build:
       context: .
       target: discovery-server
     container_name: discovery-server
+    restart: unless-stopped
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
       - "8761:8761"
     networks:
       - backend
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   identity-service:
     build:
       context: .
       target: identity-service
     container_name: identity-service
+    restart: unless-stopped
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
@@ -63,11 +68,13 @@ services:
     env_file:
       - ./identity-service/.env
     networks:
-      - backend 
+      - backend
     depends_on:
-      discovery-server:
-        condition: service_started
       mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      discovery-server:
         condition: service_healthy
 
   api-gateway:
@@ -75,6 +82,7 @@ services:
       context: .
       target: api-gateway
     container_name: api-gateway
+    restart: unless-stopped
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
@@ -84,54 +92,39 @@ services:
     networks:
       - backend
     depends_on:
-      discovery-server:
-        condition: service_started
-      identity-service:
-        condition: service_started
       redis:
         condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
 
   post-service:
     build:
       context: .
       target: post-service
     container_name: post-service
+    restart: unless-stopped
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     ports:
       - "8082:8082"
-
     env_file:
       - ./post-service/.env
     networks:
       - backend
     depends_on:
-      discovery-server:
-        condition: service_started
       mysql:
         condition: service_healthy
-      minio:
-        condition: service_started
+      discovery-server:
+        condition: service_healthy
 
-  minio:
-    image: minio/minio
-    container_name: minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
-    networks:
-      - backend
-    volumes:
-      - minio_data:/data
-
+# ---------------------------------------------------------------------------
+# Networking & Volumes
+# ---------------------------------------------------------------------------
 networks:
   backend:
     driver: bridge
 
 volumes:
   mysql_data:
-  minio_data:

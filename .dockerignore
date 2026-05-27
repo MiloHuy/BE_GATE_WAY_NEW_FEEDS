@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.iml
+
+# macOS
+.DS_Store
+
+# Maven build output (will be compiled inside Docker)
+**/target/
+
+# Local env overrides (never ship secrets in image)
+**/.env.local
+**/.env.*.local
+
+# Frontend / Node (not part of this build)
+node_modules
+npm-debug.log*
+
+# Upload directories
+post-uploads/
+
+# Docker files (not needed inside the build context)
+Dockerfile
+docker-compose.yml
+docker-compose*.yml
+
+# Docs / misc
+*.md
+*.txt
