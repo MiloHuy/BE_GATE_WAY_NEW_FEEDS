@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Entity
 @Table(name = "posts")
 @Data
@@ -24,8 +26,10 @@ public class Post {
     @Column(columnDefinition = "TEXT")
     private String content;
     
+    @ElementCollection
+    @CollectionTable(name = "post_media", joinColumns = @JoinColumn(name = "post_id"))
     @Column(name = "media_url")
-    private String mediaUrl;
+    private List<String> mediaUrls;
     
     private String status; // e.g., PUBLIC, PRIVATE
     

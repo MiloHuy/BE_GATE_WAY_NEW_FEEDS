@@ -55,11 +55,11 @@
             <artifactId>proto-common</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <!-- AWS SDK for S3 -->
+        <!-- Cloudinary SDK -->
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3</artifactId>
-            <version>2.25.0</version>
+            <groupId>com.cloudinary</groupId>
+            <artifactId>cloudinary-http44</artifactId>
+            <version>1.36.0</version>
         </dependency>
         <!-- LOMBOK -->
         <dependency>

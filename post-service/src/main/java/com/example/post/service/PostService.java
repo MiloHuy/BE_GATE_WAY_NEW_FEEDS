@@ -29,80 +29,80 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostService {
 
-    private final PostRepository postRepository;
-    private final NewsFeedRepository newsFeedRepository;
-    private final FriendshipRepository friendshipRepository;
-    private final UserClient userClient;
+        private final PostRepository postRepository;
+        private final NewsFeedRepository newsFeedRepository;
+        private final FriendshipRepository friendshipRepository;
+        private final UserClient userClient;
 
-    @Transactional
-    public Post createPost(Post post) {
+        @Transactional
+        public Post createPost(Post post) {
 
-        Post savedPost = postRepository.save(post);
+                Post savedPost = postRepository.save(post);
 
-        List<Friendship> followers = friendshipRepository.getFollowingList(post.getUserId());
+                List<Friendship> followers = friendshipRepository.getFollowingList(post.getUserId());
 
-        List<NewsFeed> feedItems = followers.stream()
-                .map(f -> NewsFeed.builder()
-                        .ownerUserId(f.getFollowerId())
-                        .postId(savedPost.getId())
-                        .build())
-                .collect(Collectors.toList());
+                List<NewsFeed> feedItems = followers.stream()
+                                .map(f -> NewsFeed.builder()
+                                                .ownerUserId(f.getFollowerId())
+                                                .postId(savedPost.getId())
+                                                .build())
+                                .collect(Collectors.toList());
 
-        feedItems.add(NewsFeed.builder()
-                .ownerUserId(post.getUserId())
-                .postId(savedPost.getId())
-                .build());
+                feedItems.add(NewsFeed.builder()
+                                .ownerUserId(post.getUserId())
+                                .postId(savedPost.getId())
+                                .build());
 
-        newsFeedRepository.saveAll(feedItems);
+                newsFeedRepository.saveAll(feedItems);
 
-        return savedPost;
-    }
+                return savedPost;
+        }
 
-    public PostResponse getPostById(String id) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
-        return mapToResponse(post);
-    }
+        public PostResponse getPostById(String id) {
+                Post post = postRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Post not found"));
+                return mapToResponse(post);
+        }
 
-    public Page<PostResponse> getAllPosts(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return postRepository.getLatestPosts(pageable)
-                .map(this::mapToResponse);
-    }
+        public Page<PostResponse> getAllPosts(int page, int size) {
+                Pageable pageable = PageRequest.of(page, size);
+                return postRepository.getLatestPosts(pageable)
+                                .map(this::mapToResponse);
+        }
 
-    public Page<PostResponse> getFeedForUser(String userId, int page, int size) {
+        public Page<PostResponse> getFeedForUser(String userId, int page, int size) {
 
-        Pageable pageable = PageRequest.of(page, size);
-        
-        Page<NewsFeed> feedItems = newsFeedRepository.getNewsFeed(userId, pageable);
-        
-        List<String> postIds = feedItems.stream()
-                .map(NewsFeed::getPostId)
-                .collect(Collectors.toList());
+                Pageable pageable = PageRequest.of(page, size);
 
-        List<PostResponse> posts = postRepository.findAllById(postIds).stream()
-                .map(this::mapToResponse)
-                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
-                .collect(Collectors.toList());
+                Page<NewsFeed> feedItems = newsFeedRepository.getNewsFeed(userId, pageable);
 
-        return new PageImpl<>(posts, pageable, feedItems.getTotalElements());
-    }
+                List<String> postIds = feedItems.stream()
+                                .map(NewsFeed::getPostId)
+                                .collect(Collectors.toList());
 
-    private PostResponse mapToResponse(Post post) {
-        
-        PostResponse response = PostResponse.builder()
-                .id(post.getId())
-                .userId(post.getUserId())
-                .content(post.getContent())
-                .mediaUrl(post.getMediaUrl())
-                .likeCount(post.getLikeCount())
-                .replyCount(post.getReplyCount())
-                .createdAt(post.getCreatedAt())
-                .build();
+                List<PostResponse> posts = postRepository.findAllById(postIds).stream()
+                                .map(this::mapToResponse)
+                                .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
+                                .collect(Collectors.toList());
 
-        UserResponse user = userClient.getUser(post.getUserId());
-        response.setUsername(user.getUsername());
+                return new PageImpl<>(posts, pageable, feedItems.getTotalElements());
+        }
 
-        return response;
-    }
+        private PostResponse mapToResponse(Post post) {
+
+                PostResponse response = PostResponse.builder()
+                                .id(post.getId())
+                                .userId(post.getUserId())
+                                .content(post.getContent())
+                                .mediaUrls(post.getMediaUrls())
+                                .likeCount(post.getLikeCount())
+                                .replyCount(post.getReplyCount())
+                                .createdAt(post.getCreatedAt())
+                                .build();
+
+                UserResponse user = userClient.getUser(post.getUserId());
+                response.setUsername(user.getUsername());
+
+                return response;
+        }
 }

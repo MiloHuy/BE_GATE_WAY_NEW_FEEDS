@@ -24,8 +24,10 @@ public class HeaderAuthenticationFilter extends OncePerRequestFilter {
         String role = request.getHeader("X-User-Role");
 
         if (userId != null && role != null) {
+            String authority = role.toUpperCase().startsWith("ROLE_") ? role.toUpperCase()
+                    : "ROLE_" + role.toUpperCase();
             List<SimpleGrantedAuthority> authorities = Collections.singletonList(
-                    new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+                    new SimpleGrantedAuthority(authority));
 
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userId, null,
                     authorities);

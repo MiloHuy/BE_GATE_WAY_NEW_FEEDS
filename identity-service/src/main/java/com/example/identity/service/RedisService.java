@@ -22,7 +22,7 @@ public class RedisService {
     }
 
     public void setValueWithExpiry(String key, String value) {
-        redisTemplate.opsForValue().set(key, value, Duration.ofMinutes(jwtExpiration));
+        redisTemplate.opsForValue().set(key, value, Duration.ofMillis(jwtExpiration));
     }
 
     public String getValue(String key) {

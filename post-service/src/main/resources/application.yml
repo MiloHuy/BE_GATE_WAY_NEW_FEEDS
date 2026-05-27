@@ -16,15 +16,16 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
     show-sql: true
-  minio:
-    endpoint: http://localhost:9000
-    access-key: minioadmin
-    secret-key: minioadmin
-    bucket: posts
   servlet:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+
 
 management:
   endpoints:
@@ -51,8 +52,7 @@ spring:
       on-profile: docker
   datasource:
     url: jdbc:mysql://mysql:3306/post_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-  minio:
-    endpoint: http://minio:9000
+  # Cloudinary credentials are loaded from the shared .env / container env
 
 eureka:
   instance:

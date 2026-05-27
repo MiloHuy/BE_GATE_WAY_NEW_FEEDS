@@ -20,17 +20,17 @@ public class UserController {
 
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
-    public AType getMyProfile(@RequestHeader("X-User-Id") String username) {
-        log.info("username: {}", username);
-        return userService.getUserProfile(username);
+    public AType getMyProfile(@RequestHeader("X-User-Id") String userId) {
+        log.info("userId: {}", userId);
+        return userService.getUserProfile(userId);
     }
 
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public AType updateMyProfile(
-            @RequestHeader("X-User-Id") String username,
+            @RequestHeader("X-User-Id") String userId,
             @RequestBody UpdateProfileRequest request) {
-        log.info("username: {}, request: {}", username, request);
-        return userService.updateProfile(username, request);
+        log.info("userId: {}, request: {}", userId, request);
+        return userService.updateProfile(userId, request);
     }
 }

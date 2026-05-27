@@ -27,24 +27,25 @@ public class AuthService {
     public AType login(AuthRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new AppException(ErrorType.
-                    badRequest("Invalid username or password")));
+                .orElseThrow(() -> new AppException(ErrorType.badRequest("Invalid username or password")));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AppException(ErrorType.badRequest("Invalid username or password"));
         }
 
-        String accessToken = jwtProvider.generateToken(user.getUsername(), user.getRole());
-        String refreshToken = jwtProvider.generateRefreshToken(user.getUsername());
+        // subject = userId (UUID) so the gateway can forward X-User-Id that resolves
+        // via findById()
+        String accessToken = jwtProvider.generateToken(user.getId(), user.getRole());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
-        redisService.setValueWithExpiry(accessToken , user.getId().toString());
+        redisService.setValueWithExpiry(accessToken, user.getId());
 
         return ApiType.success(new AuthResponse(accessToken, refreshToken));
     }
 
     public AType register(RegisterRequest request) {
         // 1 check user duplicate username or email
-        
+
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new AppException(ErrorType.badRequest("Username already exists"));
         }
@@ -61,29 +62,30 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String accessToken = jwtProvider.generateToken(user.getUsername(), user.getRole());
-        String refreshToken = jwtProvider.generateRefreshToken(user.getUsername());
+        String accessToken = jwtProvider.generateToken(user.getId(), user.getRole());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
-        redisService.setValueWithExpiry(accessToken , user.getId().toString());
+        redisService.setValueWithExpiry(accessToken, user.getId());
 
         return ApiType.success(new AuthResponse(accessToken, refreshToken));
     }
 
     public AType refresh(String refreshToken) {
-        
+
         if (!jwtProvider.isTokenValid(refreshToken)) {
             throw new AppException(ErrorType.badRequest("Invalid refresh token"));
         }
 
-        String username = jwtProvider.extractUsername(refreshToken);
+        // subject of refreshToken is userId (UUID)
+        String userId = jwtProvider.extractUsername(refreshToken);
 
-        User user = userRepository.findByUsername(username)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorType.badRequest("User not found")));
 
-        String newAccessToken = jwtProvider.generateToken(user.getUsername(), user.getRole());
-        String newRefreshToken = jwtProvider.generateRefreshToken(user.getUsername());
+        String newAccessToken = jwtProvider.generateToken(user.getId(), user.getRole());
+        String newRefreshToken = jwtProvider.generateRefreshToken(user.getId());
 
-        redisService.setValueWithExpiry(newAccessToken , user.getId().toString());
+        redisService.setValueWithExpiry(newAccessToken, user.getId());
 
         return ApiType.success(new AuthResponse(newAccessToken, newRefreshToken));
     }
