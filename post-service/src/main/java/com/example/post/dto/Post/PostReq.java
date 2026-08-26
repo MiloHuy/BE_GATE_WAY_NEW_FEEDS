@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PostReq {
-    private String userID;
     private String content;
+    private String status;
     private String mediaUrl;
 }

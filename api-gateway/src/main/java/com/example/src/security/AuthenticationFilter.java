@@ -30,22 +30,29 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                 .flatMap(auth -> {
                     Jwt jwt = auth.getToken();
                     String tokenValue = jwt.getTokenValue();
-                    return redisService.hasToken(tokenValue)
-                            .flatMap(hasKey -> {
-                                if (Boolean.TRUE.equals(hasKey)) {
-                                    String userId = jwt.getSubject();
-                                    String role = jwt.getClaimAsString("role");
-
-                                    ServerWebExchange mutatedExchange = exchange.mutate()
-                                            .request(r -> r.headers(headers -> {
-                                                headers.set("X-User-Id", userId);
-                                                headers.set("X-User-Role", role);
-                                            }))
-                                            .build();
-                                    return chain.filter(mutatedExchange);
+                    return redisService.isTokenBlacklisted(tokenValue)
+                            .flatMap(isBlacklisted -> {
+                                if (Boolean.TRUE.equals(isBlacklisted)) {
+                                    return Mono.error(new ResponseStatusException(
+                                            HttpStatus.UNAUTHORIZED, "Token invalidated"));
                                 }
-                                return Mono.error(
-                                        new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalidated"));
+                                return redisService.hasToken(tokenValue)
+                                        .flatMap(hasKey -> {
+                                            if (Boolean.TRUE.equals(hasKey)) {
+                                                String userId = jwt.getSubject();
+                                                String role = jwt.getClaimAsString("role");
+
+                                                ServerWebExchange mutatedExchange = exchange.mutate()
+                                                        .request(r -> r.headers(headers -> {
+                                                            headers.set("X-User-Id", userId);
+                                                            headers.set("X-User-Role", role);
+                                                        }))
+                                                        .build();
+                                                return chain.filter(mutatedExchange);
+                                            }
+                                            return Mono.error(new ResponseStatusException(
+                                                    HttpStatus.UNAUTHORIZED, "Token invalidated"));
+                                        });
                             });
                 })
                 .switchIfEmpty(chain.filter(exchange));

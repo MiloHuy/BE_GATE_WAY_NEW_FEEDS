@@ -14,8 +14,14 @@
 **/target/
 
 # Local env overrides (never ship secrets in image)
+.env
+.env.*
 **/.env.local
 **/.env.*.local
+
+# Local agent/runtime files
+.agents/
+.codex/
 
 # Frontend / Node (not part of this build)
 node_modules

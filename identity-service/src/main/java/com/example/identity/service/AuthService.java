@@ -13,10 +13,7 @@ import com.example.identity.security.JwtProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -24,10 +21,20 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final RedisService redisService;
 
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtProvider jwtProvider,
+            RedisService redisService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtProvider = jwtProvider;
+        this.redisService = redisService;
+    }
+
     public AType login(AuthRequest request) {
 
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorType.badRequest("Invalid username or password")));
+
+        validateActiveUser(user);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AppException(ErrorType.badRequest("Invalid username or password"));
@@ -39,6 +46,7 @@ public class AuthService {
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
         redisService.setValueWithExpiry(accessToken, user.getId());
+        redisService.setRefreshTokenWithExpiry(refreshToken, user.getId());
 
         return ApiType.success(new AuthResponse(accessToken, refreshToken));
     }
@@ -57,8 +65,8 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setFirstName(request.getFirstname());
-        user.setLastName(request.getLastname());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
 
         userRepository.save(user);
 
@@ -66,27 +74,49 @@ public class AuthService {
         String refreshToken = jwtProvider.generateRefreshToken(user.getId());
 
         redisService.setValueWithExpiry(accessToken, user.getId());
+        redisService.setRefreshTokenWithExpiry(refreshToken, user.getId());
 
         return ApiType.success(new AuthResponse(accessToken, refreshToken));
     }
 
     public AType refresh(String refreshToken) {
 
-        if (!jwtProvider.isTokenValid(refreshToken)) {
+        if (redisService.isBlacklisted(refreshToken)) {
+            throw new AppException(ErrorType.badRequest("Invalid refresh token"));
+        }
+
+        if (!jwtProvider.isRefreshTokenValid(refreshToken)) {
             throw new AppException(ErrorType.badRequest("Invalid refresh token"));
         }
 
         // subject of refreshToken is userId (UUID)
         String userId = jwtProvider.extractUsername(refreshToken);
 
+        String storedUserId = redisService.getValue(refreshToken);
+        if (!userId.equals(storedUserId)) {
+            throw new AppException(ErrorType.badRequest("Invalid refresh token"));
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorType.badRequest("User not found")));
+
+        validateActiveUser(user);
 
         String newAccessToken = jwtProvider.generateToken(user.getId(), user.getRole());
         String newRefreshToken = jwtProvider.generateRefreshToken(user.getId());
 
+        redisService.removeValue(refreshToken);
         redisService.setValueWithExpiry(newAccessToken, user.getId());
+        redisService.setRefreshTokenWithExpiry(newRefreshToken, user.getId());
 
         return ApiType.success(new AuthResponse(newAccessToken, newRefreshToken));
+    }
+
+    private void validateActiveUser(User user) {
+        if (Boolean.FALSE.equals(user.getIsEnable())
+                || Boolean.TRUE.equals(user.getIsLocked())
+                || Boolean.TRUE.equals(user.getIsDeleted())) {
+            throw new AppException(ErrorType.forbidden("User account is not active"));
+        }
     }
 }

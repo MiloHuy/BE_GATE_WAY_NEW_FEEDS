@@ -1,20 +1,40 @@
 services:
 
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - backend
+    depends_on:
+      api-gateway:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   mysql:
     image: mysql:8
     container_name: mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: leovmika68
-      MYSQL_DATABASE: identity_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - backend
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pleovmika68"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,7 +45,7 @@ services:
     container_name: redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     networks:
       - backend
     healthcheck:
@@ -66,7 +86,7 @@ services:
       - "8081:8081"
       - "9090:9090"
     env_file:
-      - ./identity-service/.env
+      - ./.env
     networks:
       - backend
     depends_on:
@@ -88,7 +108,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ./api-gateway/.env
+      - ./.env
     networks:
       - backend
     depends_on:
@@ -110,7 +130,7 @@ services:
     ports:
       - "8082:8082"
     env_file:
-      - ./post-service/.env
+      - ./.env
     networks:
       - backend
     depends_on:

@@ -34,7 +34,6 @@ public class SecurityConfig {
                         "/api/auth/refresh",
                         "/api/auth/validate",
                         "/api/media/**",
-                        "/api/posts/**",
                         "/api/gateway/**"
         };
 

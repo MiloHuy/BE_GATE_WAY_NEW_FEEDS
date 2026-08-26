@@ -1,8 +1,8 @@
 package com.example.post.controller;
 
-import com.example.post.database.entity.Post;
 import com.example.post.dto.API.AType;
 import com.example.post.dto.API.ApiType;
+import com.example.post.dto.Post.PostReq;
 import com.example.post.service.PostService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,9 @@ public class PostController {
     }
 
     @PostMapping
-    public ResponseEntity<AType> createPost(@RequestBody Post post) {
-        return ResponseEntity.ok(ApiType.success(postService.createPost(post)));
+    public ResponseEntity<AType> createPost(
+            @RequestHeader("X-User-Id") String userId,
+            @RequestBody PostReq request) {
+        return ResponseEntity.ok(ApiType.success(postService.createPost(userId, request)));
     }
 }

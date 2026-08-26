@@ -53,6 +53,9 @@ grpc:
       enable-keep-alive: true
       negotiation-type: plaintext
 
+jwt:
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
 eureka:
   instance:
     prefer-ip-address: true

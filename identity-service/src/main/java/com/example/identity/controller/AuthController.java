@@ -19,7 +19,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public AType login(@RequestBody AuthRequest request) {
+    public AType login(@Valid @RequestBody AuthRequest request) {
         return authService.login(request);
     }
 
@@ -29,7 +29,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public AType refresh(@RequestBody RefreshRequest request) {
+    public AType refresh(@Valid @RequestBody RefreshRequest request) {
         return authService.refresh(request.getRefreshToken());
     }
 }

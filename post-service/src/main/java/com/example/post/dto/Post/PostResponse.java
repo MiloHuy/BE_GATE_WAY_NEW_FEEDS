@@ -5,8 +5,6 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 @Builder
 public class PostResponse {
@@ -19,7 +17,9 @@ public class PostResponse {
 
     private String content;
 
-    private List<String> mediaUrls;
+    private String mediaUrl;
+
+    private String status;
 
     private Integer likeCount;
 

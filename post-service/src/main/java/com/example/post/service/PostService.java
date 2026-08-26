@@ -7,6 +7,7 @@ import com.example.post.database.entity.Post;
 import com.example.post.database.repository.FriendshipRepository;
 import com.example.post.database.repository.NewsFeedRepository;
 import com.example.post.database.repository.PostRepository;
+import com.example.post.dto.Post.PostReq;
 import com.example.post.dto.Post.PostResponse;
 import com.example.proto.UserResponse;
 import org.springframework.data.domain.PageImpl;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +37,13 @@ public class PostService {
         private final UserClient userClient;
 
         @Transactional
-        public Post createPost(Post post) {
+        public PostResponse createPost(String userId, PostReq request) {
+                Post post = Post.builder()
+                                .userId(userId)
+                                .content(request.getContent())
+                                .status(request.getStatus())
+                                .mediaUrls(toMediaUrls(request.getMediaUrl()))
+                                .build();
 
                 Post savedPost = postRepository.save(post);
 
@@ -55,7 +63,7 @@ public class PostService {
 
                 newsFeedRepository.saveAll(feedItems);
 
-                return savedPost;
+                return mapToResponse(savedPost);
         }
 
         public PostResponse getPostById(String id) {
@@ -94,7 +102,8 @@ public class PostService {
                                 .id(post.getId())
                                 .userId(post.getUserId())
                                 .content(post.getContent())
-                                .mediaUrls(post.getMediaUrls())
+                                .mediaUrl(getFirstMediaUrl(post.getMediaUrls()))
+                                .status(post.getStatus())
                                 .likeCount(post.getLikeCount())
                                 .replyCount(post.getReplyCount())
                                 .createdAt(post.getCreatedAt())
@@ -104,5 +113,19 @@ public class PostService {
                 response.setUsername(user.getUsername());
 
                 return response;
+        }
+
+        private List<String> toMediaUrls(String mediaUrl) {
+                if (mediaUrl == null || mediaUrl.isBlank()) {
+                        return Collections.emptyList();
+                }
+                return Collections.singletonList(mediaUrl);
+        }
+
+        private String getFirstMediaUrl(List<String> mediaUrls) {
+                if (mediaUrls == null || mediaUrls.isEmpty()) {
+                        return null;
+                }
+                return mediaUrls.get(0);
         }
 }

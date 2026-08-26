@@ -14,6 +14,9 @@ import java.util.Map;
 
 @Component
 public class JwtProvider {
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String ACCESS_TOKEN_TYPE = "ACCESS";
+    private static final String REFRESH_TOKEN_TYPE = "REFRESH";
 
     @Value("${jwt.secret}")
     private String secretKey;
@@ -28,11 +31,14 @@ public class JwtProvider {
     public String generateToken(String userId, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
+        claims.put(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE);
         return generateToken(claims, userId, jwtExpiration);
     }
 
     public String generateRefreshToken(String userId) {
-        return generateToken(new HashMap<>(), userId, refreshExpiration);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE);
+        return generateToken(claims, userId, refreshExpiration);
     }
 
     private String generateToken(Map<String, Object> extraClaims, String username, long expiration) {
@@ -63,6 +69,21 @@ public class JwtProvider {
         try {
             Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token);
             return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isRefreshTokenValid(String token) {
+        try {
+            String tokenType = Jwts.parserBuilder()
+                    .setSigningKey(getSignInKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get(TOKEN_TYPE_CLAIM, String.class);
+
+            return REFRESH_TOKEN_TYPE.equals(tokenType);
         } catch (Exception e) {
             return false;
         }
